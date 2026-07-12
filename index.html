@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Electronics Calculator</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #121212; color: #e0e0e0; padding: 20px; line-height: 1.5;
+}
+.container { max-width: 640px; margin: 0 auto; }
+h1 { font-size: 1.4rem; margin-bottom: 16px; color: #e0e0e0; }
+
+/* Tabs */
+.tabs { display: flex; margin-bottom: 16px; flex-wrap: wrap; }
+.tab {
+  margin: 0 2px 4px 0; padding: 8px 16px; border: 1px solid #444; background: #1e1e1e;
+  border-radius: 6px; cursor: pointer; font-size: 0.85rem; color: #ccc;
+  transition: background 0.15s, border-color 0.15s; touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.tab:hover { background: #2a2a3e; }
+.tab.active { background: #3a7bd5; color: #fff; border-color: #3a7bd5; }
+
+/* Panels */
+.panel { display: none; background: #1e1e1e; border-radius: 8px; padding: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.4); }
+
+/* Calculator card */
+.calc-row { margin-bottom: 12px; }
+.calc-row label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 4px; color: #aaa; }
+.calc-row input {
+  width: 100%; padding: 8px 10px; font-size: 1rem; border: 1px solid #444;
+  border-radius: 5px; background: #2a2a2a; color: #e0e0e0;
+  font-family: 'Consolas', 'Courier New', monospace; touch-action: manipulation;
+}
+.calc-row input:focus { outline: none; border-color: #3a7bd5; box-shadow: 0 0 0 2px rgba(58,123,213,0.2); }
+.result {
+  margin-top: 16px; padding: 12px; background: #252535; border-radius: 6px;
+  font-family: 'Consolas', 'Courier New', monospace; font-size: 1.1rem; color: #e0e0e0;
+}
+.result .label { font-size: 0.8rem; color: #999; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+.result .formula { font-size: 0.8rem; color: #777; margin-top: 4px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+
+/* Bode */
+.mode-select { display: flex; margin-bottom: 12px; }
+.mode-btn {
+  margin-right: 6px; padding: 6px 20px; border: 1px solid #444; background: #1e1e1e; color: #ccc;
+  border-radius: 5px; cursor: pointer; font-size: 0.85rem; touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.mode-btn:hover { background: #2a2a3e; }
+.mode-btn.active { background: #3a7bd5; color: #fff; border-color: #3a7bd5; }
+.bode-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+.bode-grid.two { grid-template-columns: 1fr 1fr; }
+.bode-grid .calc-row { margin-bottom: 0; }
+.bode-hint { font-size: 0.75rem; color: #666; margin: -8px 0 10px 0; }
+.bode-range { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+.bode-range .calc-row { margin-bottom: 0; }
+canvas { width: 100%; height: auto; border: 1px solid #333; border-radius: 4px; display: block; }
+.calc-row-inline { display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; }
+.calc-row-inline label { font-size:0.85rem; font-weight:600; color:#aaa; }
+.calc-row-inline .cbox { display:flex; align-items:center; gap:4px; font-size:0.8rem; color:#888; cursor:pointer; }
+.calc-row-inline .cbox input { width:14px; height:14px; cursor:pointer; }
+textarea {
+  width:100%; min-height:300px; padding:10px; font-size:1rem;
+  border:1px solid #444; border-radius:5px; background:#2a2a2a;
+  color:#e0e0e0; font-family:'Consolas','Courier New',monospace; resize:vertical;
+  touch-action: manipulation;
+}
+textarea:focus { outline:none; border-color:#3a7bd5; box-shadow:0 0 0 2px rgba(58,123,213,0.2); }
+
+/* CSS-only tab switching via radio buttons */
+input[name="tab"] { display: none; }
+#tab-note:checked ~ #panel-note,
+#tab-rpar:checked ~ #panel-rpar,
+#tab-gain:checked ~ #panel-gain,
+#tab-dbuv:checked ~ #panel-dbuv,
+#tab-z:checked ~ #panel-z,
+#tab-res:checked ~ #panel-res,
+#tab-bode:checked ~ #panel-bode { display: block; }
+#tab-note:checked ~ .tabs label[for="tab-note"],
+#tab-rpar:checked ~ .tabs label[for="tab-rpar"],
+#tab-gain:checked ~ .tabs label[for="tab-gain"],
+#tab-dbuv:checked ~ .tabs label[for="tab-dbuv"],
+#tab-z:checked ~ .tabs label[for="tab-z"],
+#tab-res:checked ~ .tabs label[for="tab-res"],
+#tab-bode:checked ~ .tabs label[for="tab-bode"] {
+  background: #3a7bd5; color: #fff; border-color: #3a7bd5;
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Electronics Calculator</h1>
+  <input type="radio" name="tab" id="tab-note" checked>
+  <input type="radio" name="tab" id="tab-rpar">
+  <input type="radio" name="tab" id="tab-gain">
+  <input type="radio" name="tab" id="tab-dbuv">
+  <input type="radio" name="tab" id="tab-z">
+  <input type="radio" name="tab" id="tab-res">
+  <input type="radio" name="tab" id="tab-bode">
+  <div class="tabs" id="tabs">
+    <label for="tab-note" class="tab">Note</label>
+    <label for="tab-rpar" class="tab">R∥R</label>
+    <label for="tab-gain" class="tab">Gain→dB</label>
+    <label for="tab-dbuv" class="tab">dBµV→mV</label>
+    <label for="tab-z" class="tab">Z(R+L+C)</label>
+    <label for="tab-res" class="tab">Resonance</label>
+    <label for="tab-bode" class="tab">Bode</label>
+  </div>
+
+  <!-- Panel: Parallel Resistors -->
+  <div class="panel" id="panel-rpar">
+    <div class="calc-row">
+      <label for="r1">R (kΩ)</label>
+      <input type="number" id="r1" step="any" min="0" placeholder="e.g. 1">
+    </div>
+    <div class="calc-row">
+      <label for="r2">R (kΩ)</label>
+      <input type="number" id="r2" step="any" min="0" placeholder="e.g. 2.2">
+    </div>
+    <div class="result" id="result-rpar">
+      <div class="label">R ∥ R =</div>
+      <div id="rpar-value">—</div>
+      <div class="formula">(R × R) / (R + R)</div>
+    </div>
+  </div>
+
+  <!-- Panel: Gain to dB -->
+  <div class="panel" id="panel-gain">
+    <div class="calc-row">
+      <label for="gain">Gain (linear ratio)</label>
+      <input type="number" id="gain" step="any" min="0" placeholder="e.g. 100">
+    </div>
+    <div class="result" id="result-gain">
+      <div class="label">dB =</div>
+      <div id="gain-value">—</div>
+      <div class="formula">20 × log(Gain)</div>
+    </div>
+  </div>
+
+  <!-- Panel: dBµV to mV -->
+  <div class="panel" id="panel-dbuv">
+    <div class="calc-row">
+      <label for="dbuv">dBµV</label>
+      <input type="number" id="dbuv" step="any" placeholder="e.g. 107">
+    </div>
+    <div class="result" id="result-dbuv">
+      <div class="label">Amplitude =</div>
+      <div id="dbuv-value-uv">—</div>
+      <div id="dbuv-value-mv" style="margin-top:4px;">—</div>
+      <div class="formula">V = 10^(dBµV/20)</div>
+    </div>
+  </div>
+
+  <!-- Panel: Series Impedance -->
+  <div class="panel" id="panel-z">
+    <div class="calc-row">
+      <label for="z-r">R (kΩ)</label>
+      <input type="number" id="z-r" step="any" min="0" placeholder="e.g. 1">
+    </div>
+    <div class="calc-row">
+      <label for="z-l">L (µH)</label>
+      <input type="number" id="z-l" step="any" min="0" placeholder="e.g. 10">
+    </div>
+    <div class="calc-row">
+      <div class="calc-row-inline">
+        <label for="z-c">C (µF)</label>
+        <label class="cbox"><input type="checkbox" id="z-noc"> No C</label>
+      </div>
+      <input type="number" id="z-c" step="any" min="0" placeholder="e.g. 0.1">
+    </div>
+    <div class="calc-row">
+      <label for="z-f">Frequency (kHz)</label>
+      <input type="number" id="z-f" step="any" min="0" placeholder="e.g. 1000">
+    </div>
+    <div class="calc-row">
+      <label for="z-v">V (V)</label>
+      <input type="number" id="z-v" step="any" min="0" placeholder="e.g. 1">
+    </div>
+    <div class="result" id="result-z">
+      <div class="label">Impedance Z =</div>
+      <div id="z-mag">—</div>
+      <div id="z-phase" style="margin-top:4px;">Angle <span id="z-phase-val">—</span> °</div>
+      <div id="z-detail" style="margin-top:4px; font-size:0.85rem; color:#888;">—</div>
+      <div id="z-current" style="margin-top:8px; border-top:1px solid #333; padding-top:6px;">
+        <div class="label">Current I =</div>
+        <div id="z-i-mag">—</div>
+        <div id="z-i-phase" style="margin-top:4px;">Angle <span id="z-i-phase-val">—</span> °</div>
+      </div>
+      <div class="formula" id="z-formula">Z = R + j(ωL − 1/ωC), ω = 2πf</div>
+    </div>
+    <div id="z-bode-section" style="margin-top:16px; border-top:1px solid #333; padding-top:12px;">
+      <div class="label" style="margin-bottom:8px;">Impedance Bode Plot</div>
+      <div style="display:flex; gap:8px;">
+        <div class="calc-row" style="flex:1; margin-bottom:0;"><label for="zb-fstart">Start (kHz)</label><input type="number" id="zb-fstart" step="any" value="0.01"></div>
+        <div class="calc-row" style="flex:1; margin-bottom:0;"><label for="zb-fend">End (kHz)</label><input type="number" id="zb-fend" step="any" value="1000"></div>
+        <div class="calc-row" style="flex:1; margin-bottom:0;"><label for="zb-npp">Pts/dec</label><input type="number" id="zb-npp" step="1" min="5" value="50"></div>
+      </div>
+      <canvas id="zb-canvas" style="margin-top:8px;"></canvas>
+    </div>
+  </div>
+
+  <!-- Panel: Resonance Frequency -->
+  <div class="panel" id="panel-res">
+    <div class="calc-row">
+      <label for="res-l">L (µH)</label>
+      <input type="number" id="res-l" step="any" min="0" placeholder="e.g. 10">
+    </div>
+    <div class="calc-row">
+      <label for="res-c">C (µF)</label>
+      <input type="number" id="res-c" step="any" min="0" placeholder="e.g. 0.1">
+    </div>
+    <div class="result" id="result-res">
+      <div class="label">Resonant Frequency f =</div>
+      <div id="res-value">—</div>
+      <div class="formula">f = 1 / (2π√(LC))</div>
+    </div>
+  </div>
+
+  <!-- Panel: Bode Plot -->
+  <div class="panel" id="panel-bode">
+    <div class="mode-select" id="mode-select">
+      <div class="mode-btn active" data-mode="pid" onclick="setBodeMode('pid')">PID</div>
+      <div class="mode-btn" data-mode="tptz" onclick="setBodeMode('tptz')">2p2z</div>
+      <div class="mode-btn" data-mode="zd" onclick="setBodeMode('zd')">Z-domain</div>
+    </div>
+    <div id="bode-pid-inputs">
+      <div class="bode-grid">
+        <div class="calc-row"><label for="bode-kp">Kp</label><input type="number" id="bode-kp" step="any" value="1"></div>
+        <div class="calc-row"><label for="bode-ki">Ki</label><input type="number" id="bode-ki" step="any" value="0"></div>
+        <div class="calc-row"><label for="bode-kd">Kd</label><input type="number" id="bode-kd" step="any" value="0"></div>
+      </div>
+    </div>
+    <div id="bode-tptz-inputs" style="display:none">
+      <div class="bode-grid two">
+        <div class="calc-row"><label for="bode-g">Gain</label><input type="number" id="bode-g" step="any" value="1"></div>
+        <div class="calc-row"><label for="bode-z1">z₁ (kHz)</label><input type="number" id="bode-z1" step="any" value="0.1"></div>
+        <div class="calc-row"><label for="bode-z2">z₂ (kHz)</label><input type="number" id="bode-z2" step="any" value="1"></div>
+        <div class="calc-row"><label for="bode-p2">p₂ (kHz)</label><input type="number" id="bode-p2" step="any" value="10"></div>
+      </div>
+      <div class="bode-hint">p₁ = 0 (integrator at origin, implicit)</div>
+    </div>
+    <div id="bode-sd-range" class="bode-range">
+      <div class="calc-row"><label for="bode-fstart">Start (kHz)</label><input type="number" id="bode-fstart" step="any" value="0.01"></div>
+      <div class="calc-row"><label for="bode-fend">End (kHz)</label><input type="number" id="bode-fend" step="any" value="100"></div>
+      <div class="calc-row"><label for="bode-npp">Pts/dec</label><input type="number" id="bode-npp" step="1" min="5" value="50"></div>
+    </div>
+    <div id="bode-zd-inputs" style="display:none">
+      <div class="bode-grid">
+        <div class="calc-row"><label for="zd-fs">Fs (kHz)</label><input type="number" id="zd-fs" step="any" value="65"></div>
+      </div>
+      <div class="bode-grid two" style="margin-top:8px">
+        <div class="calc-row"><label for="zd-b0">b₀</label><input type="number" id="zd-b0" step="any" value="1"></div>
+        <div class="calc-row"><label for="zd-b1">b₁</label><input type="number" id="zd-b1" step="any" value="0"></div>
+        <div class="calc-row"><label for="zd-b2">b₂</label><input type="number" id="zd-b2" step="any" value="0"></div>
+        <div class="calc-row"><label for="zd-b3">b₃</label><input type="number" id="zd-b3" step="any" value="0"></div>
+        <div class="calc-row"><label for="zd-b4">b₄</label><input type="number" id="zd-b4" step="any" value="0"></div>
+      </div>
+      <div class="bode-grid two" style="margin-top:8px">
+        <div class="calc-row"><label for="zd-a1">a₁</label><input type="number" id="zd-a1" step="any" value="0"></div>
+        <div class="calc-row"><label for="zd-a2">a₂</label><input type="number" id="zd-a2" step="any" value="0"></div>
+        <div class="calc-row"><label for="zd-a3">a₃</label><input type="number" id="zd-a3" step="any" value="0"></div>
+        <div class="calc-row"><label for="zd-a4">a₄</label><input type="number" id="zd-a4" step="any" value="0"></div>
+      </div>
+      <div class="bode-range" style="margin-top:8px">
+        <div class="calc-row"><label for="zd-fstart">Start (kHz)</label><input type="number" id="zd-fstart" step="any" value="0.01"></div>
+        <div class="calc-row"><label for="zd-fend">End (kHz)</label><input type="number" id="zd-fend" step="any" value="24"></div>
+        <div class="calc-row"><label for="zd-npp">Pts/dec</label><input type="number" id="zd-npp" step="1" min="5" value="50"></div>
+      </div>
+      <div class="formula" style="margin-top:8px">H(z) = (b₀ + b₁z⁻¹ + b₂z⁻² + b₃z⁻³ + b₄z⁻⁴) / (1 + a₁z⁻¹ + a₂z⁻² + a₃z⁻³ + a₄z⁻⁴)</div>
+    </div>
+    <canvas id="bode-canvas"></canvas>
+  </div>
+
+  <!-- Panel: Note -->
+  <div class="panel" id="panel-note">
+    <textarea id="note-text" placeholder="Write your notes here…"></textarea>
+  </div>
+
+</div>
+
+<script>
+// --- Tab switching (CSS handles display; JS handles side-effects) ---
+const TAB_IDS = ['note','rpar','gain','dbuv','z','res','bode'];
+
+function getActiveTab() {
+  const checked = document.querySelector('input[name="tab"]:checked');
+  return checked ? checked.id.replace('tab-', '') : 'note';
+}
+
+function onTabChange() {
+  save();
+  const tab = getActiveTab();
+  if (tab === 'bode') {
+    try {
+      const bm = localStorage.getItem('bodeMode');
+      if (bm) {
+        const btn = document.querySelector(`.mode-btn[data-mode="${bm}"]`);
+        if (btn) { setBodeMode(bm); return; }
+      }
+    } catch(e) {}
+    drawBode();
+  } else if (tab === 'z') {
+    drawZBode();
+  }
+}
+
+// --- Helper: format number ---
+function fmt(v) {
+  if (v === null || v === undefined || isNaN(v) || !isFinite(v)) return '—';
+  if (Math.abs(v) >= 1e6) return v.toExponential(4);
+  if (Math.abs(v) >= 1) return parseFloat(v.toFixed(4)).toString();
+  const s = v.toPrecision(5);
+  return parseFloat(s).toString();
+}
+
+// --- Helper: get numeric value or null ---
+function val(id) {
+  const v = parseFloat(document.getElementById(id).value);
+  return isNaN(v) ? null : v;
+}
+
+// --- Input IDs for save/restore ---
+const INPUT_IDS = ['r1','r2','gain','dbuv','z-r','z-l','z-c','z-f','z-noc','z-v','res-l','res-c',
+  'bode-kp','bode-ki','bode-kd','bode-g','bode-z1','bode-z2','bode-p2',
+  'bode-fstart','bode-fend','bode-npp',
+  'zd-fs','zd-b0','zd-b1','zd-b2','zd-b3','zd-b4','zd-a1','zd-a2','zd-a3','zd-a4',
+  'zd-fstart','zd-fend','zd-npp',
+  'zb-fstart','zb-fend','zb-npp','note-text'];
+
+function save() {
+  try {
+    const data = {};
+    INPUT_IDS.forEach(id => {
+      const el = document.getElementById(id);
+      data[id] = el.type === 'checkbox' ? (el.checked ? '1' : '0') : el.value;
+    });
+    data._activeTab = getActiveTab();
+    localStorage.setItem('calcInputs', JSON.stringify(data));
+  } catch(e) {}
+}
+function saveBodeMode() {
+  try {
+    const mode = document.querySelector('.mode-btn.active');
+    if (mode) localStorage.setItem('bodeMode', mode.dataset.mode);
+  } catch(e) {}
+}
+
+function restore() {
+  try {
+    const raw = localStorage.getItem('calcInputs');
+    if (!raw) return;
+    const data = JSON.parse(raw);
+    INPUT_IDS.forEach(id => {
+      if (data[id] !== undefined) {
+        const el = document.getElementById(id);
+        if (el.type === 'checkbox') el.checked = data[id] === '1';
+        else el.value = data[id];
+      }
+    });
+    if (data._activeTab) {
+      const radio = document.getElementById('tab-' + data._activeTab);
+      if (radio) radio.checked = true;
+    }
+    if (data._activeTab === 'bode') {
+      const bm = localStorage.getItem('bodeMode');
+      if (bm) {
+        const btn = document.querySelector(`.mode-btn[data-mode="${bm}"]`);
+        if (btn) setBodeMode(bm);
+      }
+    }
+  } catch(e) {}
+}
+
+// --- Calculator 1: Parallel Resistors ---
+function calcRPar() {
+  save();
+  const r1 = val('r1'), r2 = val('r2');
+  const el = document.getElementById('rpar-value');
+  if (r1 === null || r2 === null || r1 === 0 || r2 === 0) { el.textContent = '—'; return; }
+  const result = (r1 * r2) / (r1 + r2);
+  el.textContent = fmt(result) + ' kΩ';
+}
+document.getElementById('r1').addEventListener('input', calcRPar);
+document.getElementById('r2').addEventListener('input', calcRPar);
+
+// --- Calculator 2: Gain to dB ---
+function calcGain() {
+  save();
+  const g = val('gain');
+  const el = document.getElementById('gain-value');
+  if (g === null || g <= 0) { el.textContent = '—'; return; }
+  el.textContent = fmt(20 * Math.log10(g)) + ' dB';
+}
+document.getElementById('gain').addEventListener('input', calcGain);
+
+// --- Calculator 3: dBµV to mV ---
+function calcDbuv() {
+  save();
+  const d = val('dbuv');
+  const elUv = document.getElementById('dbuv-value-uv');
+  const elMv = document.getElementById('dbuv-value-mv');
+  if (d === null) { elUv.textContent = '—'; elMv.textContent = '—'; return; }
+  const uv = Math.pow(10, d / 20);
+  elUv.textContent = uv.toLocaleString(undefined, {maximumFractionDigits: 4}) + ' µV';
+  elMv.textContent = (uv / 1000).toLocaleString(undefined, {maximumFractionDigits: 6}) + ' mV';
+}
+document.getElementById('dbuv').addEventListener('input', calcDbuv);
+
+// --- Calculator 4: Series Impedance ---
+function calcZ() {
+  save();
+  const r = val('z-r'), l = val('z-l') || 0, c = val('z-c'), f = val('z-f');
+  const noC = document.getElementById('z-noc').checked;
+  const elMag = document.getElementById('z-mag');
+  const elPhase = document.getElementById('z-phase-val');
+  const elDetail = document.getElementById('z-detail');
+  const elFormula = document.getElementById('z-formula');
+  const elIMag = document.getElementById('z-i-mag');
+  const elIPhase = document.getElementById('z-i-phase-val');
+  if (r === null || f === null || f === 0) {
+    elMag.textContent = '—'; elPhase.textContent = '—'; elDetail.textContent = '—';
+    elIMag.textContent = '—'; elIPhase.textContent = '—';
+    return;
+  }
+  if (!noC && (c === null || c === 0)) {
+    elMag.textContent = '—'; elPhase.textContent = '—'; elDetail.textContent = '—';
+    elIMag.textContent = '—'; elIPhase.textContent = '—';
+    return;
+  }
+  const omega = 2 * Math.PI * f * 1000; // kHz → Hz
+  const xl = omega * l * 1e-6;
+  const xc = noC ? 0 : 1 / (omega * c * 1e-6);
+  const re = r * 1000;
+  const im = xl - xc;
+  const mag = Math.sqrt(re*re + im*im);
+  const phase = Math.atan2(im, re) * 180 / Math.PI;
+  elMag.textContent = '|Z| = ' + fmt(mag) + ' Ω';
+  elPhase.textContent = '' + fmt(phase) + '';
+  elDetail.textContent = 'R = ' + fmt(r * 1000) + ' Ω,  XL = ' + fmt(xl) + ' Ω' + (noC ? '' : ',  XC = ' + fmt(xc) + ' Ω');
+  elFormula.textContent = noC ? 'Z = R + jωL, ω = 2πf' : 'Z = R + j(ωL − 1/ωC), ω = 2πf';
+  // Current I = V / Z
+  const v = val('z-v');
+  if (v === null || v === 0) {
+    elIMag.textContent = '—'; elIPhase.textContent = '—';
+  } else {
+    const iMag = v / mag;
+    const iPhase = -phase;
+    elIMag.textContent = '|I| = ' + fmt(iMag) + ' A';
+    elIPhase.textContent = '' + fmt(iPhase) + '';
+  }
+}
+document.getElementById('z-r').addEventListener('input', calcZ);
+document.getElementById('z-l').addEventListener('input', calcZ);
+document.getElementById('z-c').addEventListener('input', calcZ);
+document.getElementById('z-f').addEventListener('input', calcZ);
+document.getElementById('z-noc').addEventListener('change', calcZ);
+document.getElementById('z-v').addEventListener('input', calcZ);
+
+// --- Z Bode Plot ---
+function drawZBode() {
+  save();
+  const panel = document.getElementById('panel-z');
+  if (panel.offsetParent === null) return;
+  const canvas = document.getElementById('zb-canvas');
+  const rect = canvas.parentElement.getBoundingClientRect();
+  const w = Math.floor(rect.width * 0.96);
+  const h = 300;
+  canvas.width = w * 2;
+  canvas.height = h * 2;
+  canvas.style.width = w + 'px';
+  canvas.style.height = h + 'px';
+  const ctx = canvas.getContext('2d');
+  ctx.scale(2, 2);
+
+  const fStart = bodeVal('zb-fstart') * 1000;
+  const fEnd = bodeVal('zb-fend') * 1000;
+  const npp = Math.max(5, bodeVal('zb-npp'));
+  if (fStart <= 0 || fEnd <= fStart) return;
+  const decades = Math.log10(fEnd / fStart);
+  const n = Math.round(decades * npp);
+
+  const r = val('z-r'), l = val('z-l') || 0, c = val('z-c');
+  const noC = document.getElementById('z-noc').checked;
+  if (r === null) return;
+  if (!noC && (c === null || c === 0)) return;
+  const freqs = [];
+  const magOhm = [], phase = [];
+
+  for (let i = 0; i <= n; i++) {
+    const f = fStart * Math.pow(10, i / npp);
+    const omega = 2 * Math.PI * f;
+    freqs.push(f);
+    const xl = omega * l * 1e-6;
+    const xc = noC ? 0 : 1 / (omega * c * 1e-6);
+    const re = r * 1000;
+    const im = xl - xc;
+    const mag = Math.sqrt(re*re + im*im);
+    const p = Math.atan2(im, re) * 180 / Math.PI;
+    magOhm.push(mag);
+    phase.push(p);
+  }
+
+  // Layout
+  const ml = 60, mr = 18, mt = 8, mb = 38, gap = 24;
+  const pw = w - ml - mr;
+  const ph = (h - mt - mb * 2 - gap) / 2;
+  const xMin = Math.log10(fStart);
+  const xMax = Math.log10(fEnd);
+
+  function xPos(f) { return ml + (Math.log10(f) - xMin) / (xMax - xMin) * pw; }
+
+  // --- Magnitude plot (log Y, ohms) ---
+  let magMin = Math.min(...magOhm);
+  let magMax = Math.max(...magOhm);
+  if (magMin === magMax) { magMin /= 10; magMax *= 10; }
+  const logYMin = Math.floor(Math.log10(magMin));
+  const logYMax = Math.ceil(Math.log10(magMax));
+  const yMagBot = 0;
+  function yMagPos(v) { return yMagBot + mt + (1 - (Math.log10(v) - logYMin) / (logYMax - logYMin)) * ph; }
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(ml, yMagBot + mt, pw, ph);
+  ctx.clip();
+
+  // Minor grid at 2, 5 between decade lines
+  ctx.strokeStyle = '#2a2a2a';
+  ctx.lineWidth = 0.5;
+  for (let p = logYMin; p < logYMax; p++) {
+    for (const m of [2, 5]) {
+      const v = m * Math.pow(10, p);
+      const y = yMagPos(v);
+      ctx.beginPath(); ctx.moveTo(ml, y); ctx.lineTo(ml + pw, y); ctx.stroke();
+    }
+  }
+  // Major grid at powers of 10
+  ctx.strokeStyle = '#444';
+  ctx.lineWidth = 1;
+  for (let p = logYMin; p <= logYMax; p++) {
+    const y = yMagPos(Math.pow(10, p));
+    ctx.beginPath(); ctx.moveTo(ml, y); ctx.lineTo(ml + pw, y); ctx.stroke();
+  }
+  // Vertical decade lines
+  for (let d = Math.ceil(xMin); d <= Math.floor(xMax); d++) {
+    const x = xPos(Math.pow(10, d));
+    ctx.beginPath(); ctx.moveTo(x, yMagBot + mt); ctx.lineTo(x, yMagBot + mt + ph); ctx.stroke();
+  }
+  // Data curve
+  ctx.strokeStyle = '#4a9eff';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  for (let i = 0; i <= n; i++) {
+    const x = xPos(freqs[i]);
+    const y = yMagPos(magOhm[i]);
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+  ctx.restore();
+
+  // Y ticks for magnitude
+  ctx.fillStyle = '#999';
+  ctx.font = '11px sans-serif';
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'middle';
+  for (let p = logYMin; p <= logYMax; p++) {
+    const v = Math.pow(10, p);
+    const y = yMagPos(v);
+    let label;
+    if (v >= 1e6) label = (v / 1e6).toFixed(1) + 'M';
+    else if (v >= 1e3) label = Math.round(v / 1e3) + 'k';
+    else label = v.toString();
+    ctx.fillText(label, ml - 6, y);
+    ctx.strokeStyle = '#555';
+    ctx.beginPath(); ctx.moveTo(ml - 3, y); ctx.lineTo(ml, y); ctx.stroke();
+  }
+  // Y label
+  ctx.save();
+  ctx.fillStyle = '#aaa';
+  ctx.font = '12px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.translate(15, yMagBot + mt + ph / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillText('|Z| (Ω)', 0, 0);
+  ctx.restore();
+
+  // --- Phase plot (linear Y, degrees) ---
+  const yPhaseBot = ph + gap;
+  const yPhaseMin = -180, yPhaseMax = 180, yPhaseRng = 360;
+  function yPhasePos(v) { return yPhaseBot + mt + (1 - (v - yPhaseMin) / yPhaseRng) * ph; }
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(ml, yPhaseBot + mt, pw, ph);
+  ctx.clip();
+
+  // Grid
+  ctx.strokeStyle = '#444';
+  ctx.lineWidth = 1;
+  for (let v = -180; v <= 180; v += 45) {
+    const y = yPhasePos(v);
+    ctx.beginPath(); ctx.moveTo(ml, y); ctx.lineTo(ml + pw, y); ctx.stroke();
+  }
+  for (let d = Math.ceil(xMin); d <= Math.floor(xMax); d++) {
+    const x = xPos(Math.pow(10, d));
+    ctx.beginPath(); ctx.moveTo(x, yPhaseBot + mt); ctx.lineTo(x, yPhaseBot + mt + ph); ctx.stroke();
+  }
+  // 0° reference
+  ctx.strokeStyle = '#666';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([4, 4]);
+  const y0line = yPhasePos(0);
+  ctx.beginPath(); ctx.moveTo(ml, y0line); ctx.lineTo(ml + pw, y0line); ctx.stroke();
+  ctx.setLineDash([]);
+  // Data
+  ctx.strokeStyle = '#4a9eff';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  for (let i = 0; i <= n; i++) {
+    const x = xPos(freqs[i]);
+    const y = yPhasePos(phase[i]);
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+  ctx.restore();
+
+  // Y ticks
+  ctx.fillStyle = '#999';
+  ctx.font = '11px sans-serif';
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'middle';
+  for (let v = -180; v <= 180; v += 45) {
+    const y = yPhasePos(v);
+    ctx.fillText(v, ml - 6, y);
+    ctx.strokeStyle = '#555';
+    ctx.beginPath(); ctx.moveTo(ml - 3, y); ctx.lineTo(ml, y); ctx.stroke();
+  }
+  // Y label
+  ctx.save();
+  ctx.fillStyle = '#aaa';
+  ctx.font = '12px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.translate(15, yPhaseBot + mt + ph / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillText('Phase (°)', 0, 0);
+  ctx.restore();
+
+  // X axis (shared, on bottom plot)
+  ctx.fillStyle = '#999';
+  ctx.font = '10px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  for (let d = Math.ceil(xMin); d <= Math.floor(xMax); d++) {
+    const x = xPos(Math.pow(10, d));
+    const fHz = Math.pow(10, d);
+    let label;
+    if (fHz >= 1e6) label = (fHz / 1e6).toFixed(1) + 'M';
+    else if (fHz >= 1e3) label = Math.round(fHz / 1e3) + 'k';
+    else label = fHz.toString();
+    ctx.fillText(label, x, yPhaseBot + mt + ph + 3);
+  }
+  ctx.fillStyle = '#888';
+  ctx.font = '11px sans-serif';
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'top';
+  ctx.fillText('Frequency (Hz)', ml + pw, yPhaseBot + mt + ph + 16);
+}
+
+const zbInputs = ['zb-fstart','zb-fend','zb-npp'];
+zbInputs.forEach(id => document.getElementById(id).addEventListener('input', drawZBode));
+// Also redraw on Z parameter changes
+document.getElementById('z-r').addEventListener('input', drawZBode);
+document.getElementById('z-l').addEventListener('input', drawZBode);
+document.getElementById('z-c').addEventListener('input', drawZBode);
+document.getElementById('z-f').addEventListener('input', drawZBode);
+document.getElementById('z-noc').addEventListener('change', drawZBode);
+
+// --- Calculator 5: Resonance Frequency ---
+function calcRes() {
+  save();
+  const l = val('res-l'), c = val('res-c');
+  const el = document.getElementById('res-value');
+  if (l === null || c === null || l === 0 || c === 0) { el.textContent = '—'; return; }
+  const lH = l * 1e-6;
+  const cF = c * 1e-6;
+  const f = 1 / (2 * Math.PI * Math.sqrt(lH * cF));
+  if (f >= 1e6) el.textContent = fmt(f / 1e6) + ' MHz';
+  else if (f >= 1e3) el.textContent = fmt(f / 1e3) + ' kHz';
+  else el.textContent = fmt(f) + ' Hz';
+}
+document.getElementById('res-l').addEventListener('input', calcRes);
+document.getElementById('res-c').addEventListener('input', calcRes);
+
+// --- Bode Plot ---
+function setBodeMode(mode) {
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector(`.mode-btn[data-mode="${mode}"]`).classList.add('active');
+  const isSd = mode === 'pid' || mode === 'tptz';
+  document.getElementById('bode-pid-inputs').style.display = mode === 'pid' ? 'block' : 'none';
+  document.getElementById('bode-tptz-inputs').style.display = mode === 'tptz' ? 'block' : 'none';
+  document.getElementById('bode-sd-range').style.display = isSd ? 'block' : 'none';
+  document.getElementById('bode-zd-inputs').style.display = mode === 'zd' ? 'block' : 'none';
+  saveBodeMode();
+  drawBode();
+}
+
+function bodeVal(id) {
+  const v = parseFloat(document.getElementById(id).value);
+  return isNaN(v) ? 0 : v;
+}
+
+function drawBode() {
+  save();
+  const panel = document.getElementById('panel-bode');
+  if (panel.offsetParent === null) return;
+  const canvas = document.getElementById('bode-canvas');
+  const rect = canvas.parentElement.getBoundingClientRect();
+  const w = Math.floor(rect.width * 0.96);
+  const h = 400;
+  canvas.width = w * 2;
+  canvas.height = h * 2;
+  canvas.style.width = w + 'px';
+  canvas.style.height = h + 'px';
+  const ctx = canvas.getContext('2d');
+  ctx.scale(2, 2);
+
+  const mode = document.querySelector('.mode-btn.active').dataset.mode;
+  let fStart, fEnd, npp;
+  if (mode === 'zd') {
+    fStart = bodeVal('zd-fstart') * 1000;
+    fEnd = bodeVal('zd-fend') * 1000;
+    npp = Math.max(5, bodeVal('zd-npp'));
+  } else {
+    fStart = bodeVal('bode-fstart') * 1000;
+    fEnd = bodeVal('bode-fend') * 1000;
+    npp = Math.max(5, bodeVal('bode-npp'));
+  }
+  if (fStart <= 0 || fEnd <= fStart) return;
+
+  // Z-domain: cap at Nyquist
+  let fs = 0;
+  if (mode === 'zd') {
+    fs = bodeVal('zd-fs') * 1000;
+    if (fs <= 0) return;
+    fEnd = Math.min(fEnd, fs / 2);
+    if (fStart >= fEnd) return;
+  }
+
+  const decades = Math.log10(fEnd / fStart);
+  const n = Math.round(decades * npp);
+  const freqs = [];
+  const mag = [], phase = [];
+  const minMag = -120;
+
+  for (let i = 0; i <= n; i++) {
+    const f = fStart * Math.pow(10, i / npp);
+    const w = 2 * Math.PI * f;
+    freqs.push(f);
+
+    let re, im;
+    if (mode === 'pid') {
+      const kp = bodeVal('bode-kp');
+      const ki = bodeVal('bode-ki');
+      const kd = bodeVal('bode-kd');
+      re = kp;
+      im = kd * w - (f === 0 ? 0 : ki / w);
+    } else if (mode === 'tptz') {
+      const g = bodeVal('bode-g');
+      const z1 = 2 * Math.PI * bodeVal('bode-z1') * 1000;
+      const z2 = 2 * Math.PI * bodeVal('bode-z2') * 1000;
+      const p2 = 2 * Math.PI * bodeVal('bode-p2') * 1000;
+      const w2 = w * w;
+      const numRe = g * (z1 * z2 - w2);
+      const numIm = g * w * (z1 + z2);
+      const denRe = -w2;
+      const denIm = p2 * w;
+      const div = denRe * denRe + denIm * denIm;
+      re = (numRe * denRe + numIm * denIm) / div;
+      im = (numIm * denRe - numRe * denIm) / div;
+    } else {
+      // Z-domain: H(z) with z = e^(jwT)
+      const b0 = bodeVal('zd-b0'), b1 = bodeVal('zd-b1'), b2 = bodeVal('zd-b2');
+      const b3 = bodeVal('zd-b3'), b4 = bodeVal('zd-b4');
+      const a1 = bodeVal('zd-a1'), a2 = bodeVal('zd-a2');
+      const a3 = bodeVal('zd-a3'), a4 = bodeVal('zd-a4');
+      const theta = 2 * Math.PI * f / fs;
+      const c = Math.cos(theta), s = Math.sin(theta);
+      const c2 = Math.cos(2 * theta), s2 = Math.sin(2 * theta);
+      const c3 = Math.cos(3 * theta), s3 = Math.sin(3 * theta);
+      const c4 = Math.cos(4 * theta), s4 = Math.sin(4 * theta);
+      const numRe = b0 + b1*c + b2*c2 + b3*c3 + b4*c4;
+      const numIm = -(b1*s + b2*s2 + b3*s3 + b4*s4);
+      const denRe = 1 + a1*c + a2*c2 + a3*c3 + a4*c4;
+      const denIm = -(a1*s + a2*s2 + a3*s3 + a4*s4);
+      const div = denRe * denRe + denIm * denIm;
+      re = (numRe * denRe + numIm * denIm) / div;
+      im = (numIm * denRe - numRe * denIm) / div;
+    }
+
+    const m = 20 * Math.log10(Math.sqrt(re * re + im * im));
+    const p = Math.atan2(im, re) * 180 / Math.PI;
+    mag.push(Math.max(m, minMag));
+    phase.push(p);
+  }
+
+  // Layout
+  const ml = 72, mr = 18, mt = 10, mb = 44, gap = 32;
+  const pw = w - ml - mr;
+  const ph = (h - mt - mb * 2 - gap) / 2;
+
+  const xMin = Math.log10(fStart);
+  const xMax = Math.log10(fEnd);
+
+  function xPos(f) { return ml + (Math.log10(f) - xMin) / (xMax - xMin) * pw; }
+
+  function drawPlot(y0, data, yLabel, unit, isMagPlot) {
+    let yMin, yMax;
+    if (isMagPlot) {
+      yMin = Math.floor(Math.min(...data) / 10) * 10;
+      yMax = Math.ceil(Math.max(...data) / 10) * 10;
+      if (yMax === yMin) { yMax = yMin + 20; yMin -= 10; }
+    } else {
+      yMin = -180; yMax = 180;
+    }
+    const yr = yMax - yMin;
+
+    function yPos(v) { return y0 + mt + (1 - (v - yMin) / yr) * ph; }
+
+    // Clip
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(ml, y0 + mt, pw, ph);
+    ctx.clip();
+
+    // Minor grid (5dB)
+    if (isMagPlot) {
+      ctx.strokeStyle = '#2a2a2a';
+      ctx.lineWidth = 0.5;
+      for (let v = Math.ceil(yMin / 5) * 5; v <= yMax; v += 5) {
+        if (v % 10 === 0) continue;
+        const y = yPos(v);
+        ctx.beginPath(); ctx.moveTo(ml, y); ctx.lineTo(ml + pw, y); ctx.stroke();
+      }
+    }
+
+    // Major grid
+    ctx.strokeStyle = '#444';
+    ctx.lineWidth = 1;
+    const hStep = isMagPlot ? 10 : 45;
+    for (let v = Math.ceil(yMin / hStep) * hStep; v <= yMax; v += hStep) {
+      const y = yPos(v);
+      ctx.beginPath(); ctx.moveTo(ml, y); ctx.lineTo(ml + pw, y); ctx.stroke();
+    }
+    // Vertical (decades)
+    for (let d = Math.ceil(xMin); d <= Math.floor(xMax); d++) {
+      const x = xPos(Math.pow(10, d));
+      ctx.beginPath(); ctx.moveTo(x, y0 + mt); ctx.lineTo(x, y0 + mt + ph); ctx.stroke();
+    }
+
+    // 0dB / 0° reference
+    if (yMin < 0 && yMax > 0) {
+      ctx.strokeStyle = '#666';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4, 4]);
+      const y0line = yPos(0);
+      ctx.beginPath(); ctx.moveTo(ml, y0line); ctx.lineTo(ml + pw, y0line); ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    // Data
+    ctx.strokeStyle = '#4a9eff';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    for (let i = 0; i <= n; i++) {
+      const x = xPos(freqs[i]);
+      const y = yPos(data[i]);
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+
+    ctx.restore();
+
+    // Y ticks and values
+    ctx.fillStyle = '#999';
+    ctx.font = '11px sans-serif';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    for (let v = Math.ceil(yMin / hStep) * hStep; v <= yMax; v += hStep) {
+      const y = yPos(v);
+      ctx.fillText(v, ml - 6, y);
+      ctx.strokeStyle = '#555';
+      ctx.beginPath(); ctx.moveTo(ml - 3, y); ctx.lineTo(ml, y); ctx.stroke();
+    }
+
+    // Y label (rotated)
+    ctx.save();
+    ctx.fillStyle = '#aaa';
+    ctx.font = '12px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.translate(15, y0 + mt + ph / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillText(yLabel, 0, 0);
+    ctx.restore();
+
+    // X ticks (bottom plot only)
+    if (!isMagPlot) {
+      ctx.fillStyle = '#999';
+      ctx.font = '10px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      for (let d = Math.ceil(xMin); d <= Math.floor(xMax); d++) {
+        const x = xPos(Math.pow(10, d));
+        const fHz = Math.pow(10, d);
+        let label;
+        if (fHz >= 1e6) label = (fHz / 1e6).toFixed(1) + 'M';
+        else if (fHz >= 1e3) label = Math.round(fHz / 1e3) + 'k';
+        else label = fHz.toString();
+        ctx.fillText(label, x, y0 + mt + ph + 3);
+      }
+      ctx.fillStyle = '#888';
+      ctx.font = '11px sans-serif';
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'top';
+      ctx.fillText('Frequency (Hz)', ml + pw, y0 + mt + ph + 20);
+    }
+  }
+
+  drawPlot(0, mag, 'Mag (dB)', 'dB', true);
+  drawPlot(ph + gap, phase, 'Phase (°)', '°', false);
+}
+
+const bodeInputs = ['bode-kp','bode-ki','bode-kd','bode-g','bode-z1','bode-z2','bode-p2','bode-fstart','bode-fend','bode-npp'];
+bodeInputs.forEach(id => document.getElementById(id).addEventListener('input', drawBode));
+const zdInputs = ['zd-fs','zd-b0','zd-b1','zd-b2','zd-b3','zd-b4','zd-a1','zd-a2','zd-a3','zd-a4','zd-fstart','zd-fend','zd-npp'];
+zdInputs.forEach(id => document.getElementById(id).addEventListener('input', drawBode));
+document.getElementById('note-text').addEventListener('input', save);
+
+// --- On load: restore saved values, run all calculators ---
+document.addEventListener('DOMContentLoaded', function() {
+  TAB_IDS.forEach(function(id) {
+    document.getElementById('tab-' + id).addEventListener('change', onTabChange);
+  });
+  restore();
+  calcRPar(); calcGain(); calcDbuv(); calcZ(); calcRes(); drawBode(); drawZBode();
+});
+</script>
+</body>
+</html>

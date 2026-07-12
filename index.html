@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Electronics Calculator</title>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -14,18 +14,18 @@ body {
 h1 { font-size: 1.4rem; margin-bottom: 16px; color: #e0e0e0; }
 
 /* Tabs */
-.tabs { display: flex; margin-bottom: 16px; flex-wrap: wrap; }
+.tabs { display: flex; gap: 4px; margin-bottom: 16px; flex-wrap: wrap; }
 .tab {
-  margin: 0 2px 4px 0; padding: 8px 16px; border: 1px solid #444; background: #1e1e1e;
+  padding: 8px 16px; border: 1px solid #444; background: #1e1e1e;
   border-radius: 6px; cursor: pointer; font-size: 0.85rem; color: #ccc;
-  transition: background 0.15s, border-color 0.15s; touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s, border-color 0.15s;
 }
 .tab:hover { background: #2a2a3e; }
 .tab.active { background: #3a7bd5; color: #fff; border-color: #3a7bd5; }
 
 /* Panels */
 .panel { display: none; background: #1e1e1e; border-radius: 8px; padding: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.4); }
+.panel.active { display: block; }
 
 /* Calculator card */
 .calc-row { margin-bottom: 12px; }
@@ -33,7 +33,7 @@ h1 { font-size: 1.4rem; margin-bottom: 16px; color: #e0e0e0; }
 .calc-row input {
   width: 100%; padding: 8px 10px; font-size: 1rem; border: 1px solid #444;
   border-radius: 5px; background: #2a2a2a; color: #e0e0e0;
-  font-family: 'Consolas', 'Courier New', monospace; touch-action: manipulation;
+  font-family: 'Consolas', 'Courier New', monospace;
 }
 .calc-row input:focus { outline: none; border-color: #3a7bd5; box-shadow: 0 0 0 2px rgba(58,123,213,0.2); }
 .result {
@@ -44,11 +44,10 @@ h1 { font-size: 1.4rem; margin-bottom: 16px; color: #e0e0e0; }
 .result .formula { font-size: 0.8rem; color: #777; margin-top: 4px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
 
 /* Bode */
-.mode-select { display: flex; margin-bottom: 12px; }
+.mode-select { display: flex; gap: 6px; margin-bottom: 12px; }
 .mode-btn {
-  margin-right: 6px; padding: 6px 20px; border: 1px solid #444; background: #1e1e1e; color: #ccc;
-  border-radius: 5px; cursor: pointer; font-size: 0.85rem; touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
+  padding: 6px 20px; border: 1px solid #444; background: #1e1e1e; color: #ccc;
+  border-radius: 5px; cursor: pointer; font-size: 0.85rem;
 }
 .mode-btn:hover { background: #2a2a3e; }
 .mode-btn.active { background: #3a7bd5; color: #fff; border-color: #3a7bd5; }
@@ -64,67 +63,162 @@ canvas { width: 100%; height: auto; border: 1px solid #333; border-radius: 4px; 
 .calc-row-inline .cbox { display:flex; align-items:center; gap:4px; font-size:0.8rem; color:#888; cursor:pointer; }
 .calc-row-inline .cbox input { width:14px; height:14px; cursor:pointer; }
 textarea {
-  width:100%; min-height:300px; padding:10px; font-size:1rem;
+  width:100%; min-height:300px; padding:10px; font-size:0.9rem;
   border:1px solid #444; border-radius:5px; background:#2a2a2a;
   color:#e0e0e0; font-family:'Consolas','Courier New',monospace; resize:vertical;
-  touch-action: manipulation;
 }
 textarea:focus { outline:none; border-color:#3a7bd5; box-shadow:0 0 0 2px rgba(58,123,213,0.2); }
-
-/* CSS-only tab switching via radio buttons */
-input[name="tab"] { display: none; }
-#tab-note:checked ~ #panel-note,
-#tab-rpar:checked ~ #panel-rpar,
-#tab-gain:checked ~ #panel-gain,
-#tab-dbuv:checked ~ #panel-dbuv,
-#tab-z:checked ~ #panel-z,
-#tab-res:checked ~ #panel-res,
-#tab-bode:checked ~ #panel-bode { display: block; }
-#tab-note:checked ~ .tabs label[for="tab-note"],
-#tab-rpar:checked ~ .tabs label[for="tab-rpar"],
-#tab-gain:checked ~ .tabs label[for="tab-gain"],
-#tab-dbuv:checked ~ .tabs label[for="tab-dbuv"],
-#tab-z:checked ~ .tabs label[for="tab-z"],
-#tab-res:checked ~ .tabs label[for="tab-res"],
-#tab-bode:checked ~ .tabs label[for="tab-bode"] {
-  background: #3a7bd5; color: #fff; border-color: #3a7bd5;
-}
 </style>
 </head>
 <body>
 <div class="container">
   <h1>Electronics Calculator</h1>
-  <input type="radio" name="tab" id="tab-note" checked>
-  <input type="radio" name="tab" id="tab-rpar">
-  <input type="radio" name="tab" id="tab-gain">
-  <input type="radio" name="tab" id="tab-dbuv">
-  <input type="radio" name="tab" id="tab-z">
-  <input type="radio" name="tab" id="tab-res">
-  <input type="radio" name="tab" id="tab-bode">
   <div class="tabs" id="tabs">
-    <label for="tab-note" class="tab">Note</label>
-    <label for="tab-rpar" class="tab">R∥R</label>
-    <label for="tab-gain" class="tab">Gain→dB</label>
-    <label for="tab-dbuv" class="tab">dBµV→mV</label>
-    <label for="tab-z" class="tab">Z(R+L+C)</label>
-    <label for="tab-res" class="tab">Resonance</label>
-    <label for="tab-bode" class="tab">Bode</label>
+    <div class="tab active" data-tab="note">Note</div>
+    <div class="tab" data-tab="rpar">R</div>
+    <div class="tab" data-tab="l">L</div>
+    <div class="tab" data-tab="gain">Gain→dB</div>
+    <div class="tab" data-tab="dbuv">dBµV→mV</div>
+    <div class="tab" data-tab="z">Z(R+L+C)</div>
+    <div class="tab" data-tab="res">Resonance</div>
+    <div class="tab" data-tab="bode">Bode</div>
   </div>
 
-  <!-- Panel: Parallel Resistors -->
+  <!-- Panel: Resistor divider / parallel -->
   <div class="panel" id="panel-rpar">
-    <div class="calc-row">
-      <label for="r1">R (kΩ)</label>
-      <input type="number" id="r1" step="any" min="0" placeholder="e.g. 1">
-    </div>
-    <div class="calc-row">
-      <label for="r2">R (kΩ)</label>
-      <input type="number" id="r2" step="any" min="0" placeholder="e.g. 2.2">
+    <div class="bode-grid two">
+      <div class="calc-row">
+        <label for="ra">R<sub>a</sub> (kΩ)</label>
+        <input type="number" id="ra" step="any" min="0" placeholder="e.g. 1">
+      </div>
+      <div class="calc-row">
+        <label for="rb">R<sub>b</sub> (kΩ)</label>
+        <input type="number" id="rb" step="any" min="0" placeholder="e.g. 2.2">
+      </div>
     </div>
     <div class="result" id="result-rpar">
-      <div class="label">R ∥ R =</div>
-      <div id="rpar-value">—</div>
-      <div class="formula">(R × R) / (R + R)</div>
+      <div>Ra∥Rb = <span id="rpar-value">—</span></div>
+      <div style="margin-top:2px;">Rb/(Ra+Rb) = <span id="rdiv-value">—</span></div>
+    </div>
+    <div class="bode-grid two" style="margin-top:12px;">
+      <div class="calc-row">
+        <label for="rc">R<sub>c</sub> (kΩ)</label>
+        <input type="number" id="rc" step="any" min="0" placeholder="e.g. 1">
+      </div>
+      <div class="calc-row">
+        <label for="rd">R<sub>d</sub> (kΩ)</label>
+        <input type="number" id="rd" step="any" min="0" placeholder="e.g. 2.2">
+      </div>
+    </div>
+    <div class="result" id="result-rcrd">
+      <div>Rc∥Rd = <span id="rcrd-par-value">—</span></div>
+      <div style="margin-top:2px;">Rd/(Rc+Rd) = <span id="rcrd-div-value">—</span></div>
+    </div>
+  </div>
+
+  <!-- Panel: Inductor -->
+  <div class="panel" id="panel-l">
+    <div class="bode-grid">
+      <div class="calc-row">
+        <label for="l-dil">L (µH)</label>
+        <input type="number" id="l-dil" step="any" min="0" placeholder="e.g. 10">
+      </div>
+      <div class="calc-row">
+        <label for="l-vl">V<sub>L</sub> (V)</label>
+        <input type="number" id="l-vl" step="any" min="0" placeholder="e.g. 5">
+      </div>
+      <div class="calc-row">
+        <label for="l-t">t (µs)</label>
+        <input type="number" id="l-t" step="any" min="0" placeholder="e.g. 1">
+      </div>
+    </div>
+    <div class="result" style="margin-top:0;">
+      <div>dI = <span id="l-di">—</span> A</div>
+      <div class="formula">dI = V<sub>L</sub> · t / L</div>
+    </div>
+    <div class="label" style="margin:16px 0 8px 0; font-size:0.9rem; border-top:1px solid #333; padding-top:12px;">Core parameters</div>
+    <div class="bode-grid">
+      <div class="calc-row">
+        <label for="l-ui">µ<sub>i</sub></label>
+        <input type="number" id="l-ui" step="any" min="0" placeholder="e.g. 2000">
+      </div>
+      <div class="calc-row">
+        <label for="l-ae">A<sub>e</sub> (mm²)</label>
+        <input type="number" id="l-ae" step="any" min="0" placeholder="e.g. 100">
+      </div>
+      <div class="calc-row">
+        <label for="l-le">l<sub>e</sub> (mm)</label>
+        <input type="number" id="l-le" step="any" min="0" placeholder="e.g. 150">
+      </div>
+    </div>
+    <div class="result" style="margin-top:0;">
+      <div>A<sub>L</sub> = <span id="l-al">—</span> nH/N²</div>
+      <div class="formula">A<sub>L</sub> = 1.2566 · µ<sub>i</sub> · A<sub>e</sub> / l<sub>e</sub></div>
+    </div>
+    <div class="label" style="margin:16px 0 8px 0; font-size:0.9rem; border-top:1px solid #333; padding-top:12px;">Inductance from A<sub>L</sub></div>
+    <div class="bode-grid two">
+      <div class="calc-row">
+        <label for="l-al-n">A<sub>L</sub> (nH/N²)</label>
+        <input type="number" id="l-al-n" step="any" min="0" placeholder="e.g. 250">
+      </div>
+      <div class="calc-row">
+        <label for="l-n">N (turns)</label>
+        <input type="number" id="l-n" step="any" min="0" placeholder="e.g. 10">
+      </div>
+    </div>
+    <div class="result" style="margin-top:0;">
+      <div>L = <span id="l-lval">—</span> µH</div>
+      <div class="formula">L(µH) = A<sub>L</sub>(nH/N²) · N² / 1000</div>
+    </div>
+    <div class="label" style="margin:16px 0 8px 0; font-size:0.9rem; border-top:1px solid #333; padding-top:12px;">Saturation current</div>
+    <div class="bode-grid two">
+      <div class="calc-row">
+        <label for="l-bsat">B<sub>sat</sub> (T)</label>
+        <input type="number" id="l-bsat" step="any" min="0" placeholder="e.g. 0.4">
+      </div>
+      <div class="calc-row">
+        <label for="l-isat-n">N (turns)</label>
+        <input type="number" id="l-isat-n" step="any" min="0" placeholder="e.g. 10">
+      </div>
+      <div class="calc-row">
+        <label for="l-isat-ae">A<sub>e</sub> (mm²)</label>
+        <input type="number" id="l-isat-ae" step="any" min="0" placeholder="e.g. 100">
+      </div>
+      <div class="calc-row">
+        <label for="l-isat-l">L (µH)</label>
+        <input type="number" id="l-isat-l" step="any" min="0" placeholder="e.g. 47">
+      </div>
+    </div>
+    <div class="result" style="margin-top:0;">
+      <div>I<sub>sat</sub> = <span id="l-isat">—</span> A</div>
+      <div class="formula">I<sub>sat</sub> = N · B<sub>sat</sub> · A<sub>e</sub> / L</div>
+    </div>
+    <div class="label" style="margin:16px 0 8px 0; font-size:0.9rem; border-top:1px solid #333; padding-top:12px;">Gapped-core inductance</div>
+    <div class="bode-grid">
+      <div class="calc-row">
+        <label for="l-gap-ae">A<sub>e</sub> (mm²)</label>
+        <input type="number" id="l-gap-ae" step="any" min="0" placeholder="e.g. 100">
+      </div>
+      <div class="calc-row">
+        <label for="l-gap-le">l<sub>e</sub> (mm)</label>
+        <input type="number" id="l-gap-le" step="any" min="0" placeholder="e.g. 150">
+      </div>
+      <div class="calc-row">
+        <label for="l-gap-g">gap (mm)</label>
+        <input type="number" id="l-gap-g" step="any" min="0" placeholder="e.g. 0.5">
+      </div>
+      <div class="calc-row">
+        <label for="l-gap-ui">µ<sub>i</sub></label>
+        <input type="number" id="l-gap-ui" step="any" min="0" placeholder="e.g. 2000">
+      </div>
+      <div class="calc-row">
+        <label for="l-gap-n">N (turns)</label>
+        <input type="number" id="l-gap-n" step="any" min="0" placeholder="e.g. 10">
+      </div>
+    </div>
+    <div class="result" style="margin-top:0;">
+      <div>L = <span id="l-gap-l">—</span> µH</div>
+      <div class="formula">L = 4π · 10⁻⁴ · N² · A<sub>e</sub> / (l<sub>e</sub>/µ<sub>i</sub> + gap)</div>
     </div>
   </div>
 
@@ -157,40 +251,31 @@ input[name="tab"] { display: none; }
 
   <!-- Panel: Series Impedance -->
   <div class="panel" id="panel-z">
-    <div class="calc-row">
-      <label for="z-r">R (kΩ)</label>
-      <input type="number" id="z-r" step="any" min="0" placeholder="e.g. 1">
-    </div>
-    <div class="calc-row">
-      <label for="z-l">L (µH)</label>
-      <input type="number" id="z-l" step="any" min="0" placeholder="e.g. 10">
-    </div>
-    <div class="calc-row">
-      <div class="calc-row-inline">
-        <label for="z-c">C (µF)</label>
-        <label class="cbox"><input type="checkbox" id="z-noc"> No C</label>
+    <div class="bode-grid two" style="margin-bottom:12px;">
+      <div class="calc-row">
+        <label for="z-r">R (kΩ)</label>
+        <input type="number" id="z-r" step="any" min="0" placeholder="e.g. 1">
       </div>
-      <input type="number" id="z-c" step="any" min="0" placeholder="e.g. 0.1">
+      <div class="calc-row">
+        <label for="z-l">L (µH)</label>
+        <input type="number" id="z-l" step="any" min="0" placeholder="e.g. 10">
+      </div>
     </div>
-    <div class="calc-row">
-      <label for="z-f">Frequency (kHz)</label>
-      <input type="number" id="z-f" step="any" min="0" placeholder="e.g. 1000">
-    </div>
-    <div class="calc-row">
-      <label for="z-v">V (V)</label>
-      <input type="number" id="z-v" step="any" min="0" placeholder="e.g. 1">
+    <div class="bode-grid two" style="margin-bottom:12px;">
+      <div class="calc-row">
+        <div class="calc-row-inline">
+          <label for="z-c">C (µF)</label>
+          <label class="cbox"><input type="checkbox" id="z-noc"> No C</label>
+        </div>
+        <input type="number" id="z-c" step="any" min="0" placeholder="e.g. 0.1">
+      </div>
+      <div class="calc-row">
+        <label for="z-f">Frequency (kHz)</label>
+        <input type="number" id="z-f" step="any" min="0" placeholder="e.g. 1000">
+      </div>
     </div>
     <div class="result" id="result-z">
-      <div class="label">Impedance Z =</div>
-      <div id="z-mag">—</div>
-      <div id="z-phase" style="margin-top:4px;">Angle <span id="z-phase-val">—</span> °</div>
-      <div id="z-detail" style="margin-top:4px; font-size:0.85rem; color:#888;">—</div>
-      <div id="z-current" style="margin-top:8px; border-top:1px solid #333; padding-top:6px;">
-        <div class="label">Current I =</div>
-        <div id="z-i-mag">—</div>
-        <div id="z-i-phase" style="margin-top:4px;">Angle <span id="z-i-phase-val">—</span> °</div>
-      </div>
-      <div class="formula" id="z-formula">Z = R + j(ωL − 1/ωC), ω = 2πf</div>
+      <div>Z = <span id="z-mag-val">—</span> ∠ <span id="z-phase-val">—</span> ° Ω</div>
     </div>
     <div id="z-bode-section" style="margin-top:16px; border-top:1px solid #333; padding-top:12px;">
       <div class="label" style="margin-bottom:8px;">Impedance Bode Plot</div>
@@ -201,17 +286,28 @@ input[name="tab"] { display: none; }
       </div>
       <canvas id="zb-canvas" style="margin-top:8px;"></canvas>
     </div>
+    <div class="bode-grid two" style="margin-top:12px;">
+      <div class="calc-row">
+        <label for="z-v">V (V)</label>
+        <input type="number" id="z-v" step="any" min="0" placeholder="e.g. 1">
+      </div>
+      <div class="result" style="margin-top:0;">
+        <div>I = <span id="z-i-mag-val">—</span> ∠ <span id="z-i-phase-val">—</span> ° A</div>
+      </div>
+    </div>
   </div>
 
   <!-- Panel: Resonance Frequency -->
   <div class="panel" id="panel-res">
-    <div class="calc-row">
-      <label for="res-l">L (µH)</label>
-      <input type="number" id="res-l" step="any" min="0" placeholder="e.g. 10">
-    </div>
-    <div class="calc-row">
-      <label for="res-c">C (µF)</label>
-      <input type="number" id="res-c" step="any" min="0" placeholder="e.g. 0.1">
+    <div class="bode-grid two">
+      <div class="calc-row">
+        <label for="res-l">L (µH)</label>
+        <input type="number" id="res-l" step="any" min="0" placeholder="e.g. 10">
+      </div>
+      <div class="calc-row">
+        <label for="res-c">C (µF)</label>
+        <input type="number" id="res-c" step="any" min="0" placeholder="e.g. 0.1">
+      </div>
     </div>
     <div class="result" id="result-res">
       <div class="label">Resonant Frequency f =</div>
@@ -223,9 +319,9 @@ input[name="tab"] { display: none; }
   <!-- Panel: Bode Plot -->
   <div class="panel" id="panel-bode">
     <div class="mode-select" id="mode-select">
-      <div class="mode-btn active" data-mode="pid" onclick="setBodeMode('pid')">PID</div>
-      <div class="mode-btn" data-mode="tptz" onclick="setBodeMode('tptz')">2p2z</div>
-      <div class="mode-btn" data-mode="zd" onclick="setBodeMode('zd')">Z-domain</div>
+      <div class="mode-btn active" data-mode="pid">PID</div>
+      <div class="mode-btn" data-mode="tptz">2p2z</div>
+      <div class="mode-btn" data-mode="zd">Z-domain</div>
     </div>
     <div id="bode-pid-inputs">
       <div class="bode-grid">
@@ -276,37 +372,36 @@ input[name="tab"] { display: none; }
   </div>
 
   <!-- Panel: Note -->
-  <div class="panel" id="panel-note">
+  <div class="panel active" id="panel-note">
     <textarea id="note-text" placeholder="Write your notes here…"></textarea>
   </div>
 
 </div>
 
 <script>
-// --- Tab switching (CSS handles display; JS handles side-effects) ---
-const TAB_IDS = ['note','rpar','gain','dbuv','z','res','bode'];
-
-function getActiveTab() {
-  const checked = document.querySelector('input[name="tab"]:checked');
-  return checked ? checked.id.replace('tab-', '') : 'note';
-}
-
-function onTabChange() {
+// --- Tab switching ---
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  tab.classList.add('active');
+  document.getElementById('panel-' + tab.dataset.tab).classList.add('active');
   save();
-  const tab = getActiveTab();
-  if (tab === 'bode') {
-    try {
-      const bm = localStorage.getItem('bodeMode');
-      if (bm) {
-        const btn = document.querySelector(`.mode-btn[data-mode="${bm}"]`);
-        if (btn) { setBodeMode(bm); return; }
-      }
-    } catch(e) {}
+  if (tab.dataset.tab === 'bode') {
+    const bm = localStorage.getItem('bodeMode');
+    if (bm) {
+      const btn = document.querySelector(`.mode-btn[data-mode="${bm}"]`);
+      if (btn) { setBodeMode(bm); return; }
+    }
     drawBode();
-  } else if (tab === 'z') {
+  } else if (tab.dataset.tab === 'z') {
     drawZBode();
   }
 }
+document.getElementById('tabs').addEventListener('click', function(e) {
+  const tab = e.target.closest('.tab');
+  if (!tab) return;
+  switchTab(tab);
+});
 
 // --- Helper: format number ---
 function fmt(v) {
@@ -324,7 +419,7 @@ function val(id) {
 }
 
 // --- Input IDs for save/restore ---
-const INPUT_IDS = ['r1','r2','gain','dbuv','z-r','z-l','z-c','z-f','z-noc','z-v','res-l','res-c',
+const INPUT_IDS = ['ra','rb','rc','rd','l-dil','l-vl','l-t','l-ui','l-ae','l-le','l-al-n','l-n','l-bsat','l-isat-n','l-isat-ae','l-isat-l','l-gap-ae','l-gap-le','l-gap-g','l-gap-ui','l-gap-n','gain','dbuv','z-r','z-l','z-c','z-f','z-noc','z-v','res-l','res-c',
   'bode-kp','bode-ki','bode-kd','bode-g','bode-z1','bode-z2','bode-p2',
   'bode-fstart','bode-fend','bode-npp',
   'zd-fs','zd-b0','zd-b1','zd-b2','zd-b3','zd-b4','zd-a1','zd-a2','zd-a3','zd-a4',
@@ -332,27 +427,24 @@ const INPUT_IDS = ['r1','r2','gain','dbuv','z-r','z-l','z-c','z-f','z-noc','z-v'
   'zb-fstart','zb-fend','zb-npp','note-text'];
 
 function save() {
-  try {
-    const data = {};
-    INPUT_IDS.forEach(id => {
-      const el = document.getElementById(id);
-      data[id] = el.type === 'checkbox' ? (el.checked ? '1' : '0') : el.value;
-    });
-    data._activeTab = getActiveTab();
-    localStorage.setItem('calcInputs', JSON.stringify(data));
-  } catch(e) {}
+  const data = {};
+  INPUT_IDS.forEach(id => {
+    const el = document.getElementById(id);
+    data[id] = el.type === 'checkbox' ? (el.checked ? '1' : '0') : el.value;
+  });
+  const active = document.querySelector('.tab.active');
+  if (active) data._activeTab = active.dataset.tab;
+  localStorage.setItem('calcInputs', JSON.stringify(data));
 }
 function saveBodeMode() {
-  try {
-    const mode = document.querySelector('.mode-btn.active');
-    if (mode) localStorage.setItem('bodeMode', mode.dataset.mode);
-  } catch(e) {}
+  const mode = document.querySelector('.mode-btn.active');
+  if (mode) localStorage.setItem('bodeMode', mode.dataset.mode);
 }
 
 function restore() {
+  const raw = localStorage.getItem('calcInputs');
+  if (!raw) return;
   try {
-    const raw = localStorage.getItem('calcInputs');
-    if (!raw) return;
     const data = JSON.parse(raw);
     INPUT_IDS.forEach(id => {
       if (data[id] !== undefined) {
@@ -362,8 +454,8 @@ function restore() {
       }
     });
     if (data._activeTab) {
-      const radio = document.getElementById('tab-' + data._activeTab);
-      if (radio) radio.checked = true;
+      const tab = document.querySelector(`.tab[data-tab="${data._activeTab}"]`);
+      if (tab) switchTab(tab);
     }
     if (data._activeTab === 'bode') {
       const bm = localStorage.getItem('bodeMode');
@@ -378,14 +470,71 @@ function restore() {
 // --- Calculator 1: Parallel Resistors ---
 function calcRPar() {
   save();
-  const r1 = val('r1'), r2 = val('r2');
-  const el = document.getElementById('rpar-value');
-  if (r1 === null || r2 === null || r1 === 0 || r2 === 0) { el.textContent = '—'; return; }
-  const result = (r1 * r2) / (r1 + r2);
-  el.textContent = fmt(result) + ' kΩ';
+  const ra = val('ra'), rb = val('rb'), rc = val('rc'), rd = val('rd');
+  const elPar = document.getElementById('rpar-value');
+  const elDiv = document.getElementById('rdiv-value');
+  const elRcRdPar = document.getElementById('rcrd-par-value');
+  const elRcRdDiv = document.getElementById('rcrd-div-value');
+  if (ra !== null && rb !== null && ra !== 0 && rb !== 0) {
+    elPar.textContent = fmt((ra * rb) / (ra + rb)) + ' kΩ';
+    elDiv.textContent = fmt(rb / (ra + rb));
+  } else {
+    elPar.textContent = '—'; elDiv.textContent = '—';
+  }
+  if (rc !== null && rd !== null && rc !== 0 && rd !== 0) {
+    elRcRdPar.textContent = fmt((rc * rd) / (rc + rd)) + ' kΩ';
+    elRcRdDiv.textContent = fmt(rd / (rc + rd));
+  } else {
+    elRcRdPar.textContent = '—'; elRcRdDiv.textContent = '—';
+  }
 }
-document.getElementById('r1').addEventListener('input', calcRPar);
-document.getElementById('r2').addEventListener('input', calcRPar);
+document.getElementById('ra').addEventListener('input', calcRPar);
+document.getElementById('rb').addEventListener('input', calcRPar);
+document.getElementById('rc').addEventListener('input', calcRPar);
+document.getElementById('rd').addEventListener('input', calcRPar);
+
+// --- Calculator: Inductor ---
+function calcL() {
+  save();
+  const dil = val('l-dil'), vl = val('l-vl'), t = val('l-t');
+  const elDi = document.getElementById('l-di');
+  if (dil !== null && vl !== null && t !== null && dil !== 0) {
+    elDi.textContent = fmt(vl * t / dil);
+  } else {
+    elDi.textContent = '—';
+  }
+  const ui = val('l-ui'), ae = val('l-ae'), le = val('l-le');
+  const elAl = document.getElementById('l-al');
+  if (ui !== null && ae !== null && le !== null && le !== 0) {
+    const al = 1.256637 * ui * ae / le;
+    elAl.textContent = fmt(al);
+  } else {
+    elAl.textContent = '—';
+  }
+  const alN = val('l-al-n'), n = val('l-n');
+  const elL = document.getElementById('l-lval');
+  if (alN !== null && n !== null) {
+    elL.textContent = fmt(alN * n * n / 1000);
+  } else {
+    elL.textContent = '—';
+  }
+  const bsat = val('l-bsat'), nIsat = val('l-isat-n'), aeIsat = val('l-isat-ae'), lIsat = val('l-isat-l');
+  const elIsat = document.getElementById('l-isat');
+  if (bsat !== null && nIsat !== null && aeIsat !== null && lIsat !== null && lIsat !== 0) {
+    elIsat.textContent = fmt(nIsat * bsat * aeIsat / lIsat);
+  } else {
+    elIsat.textContent = '—';
+  }
+  const gapAe = val('l-gap-ae'), gapLe = val('l-gap-le'), gapG = val('l-gap-g'), gapUi = val('l-gap-ui'), gapN = val('l-gap-n');
+  const elGapL = document.getElementById('l-gap-l');
+  if (gapAe !== null && gapLe !== null && gapG !== null && gapUi !== null && gapN !== null && (gapLe/gapUi + gapG) !== 0) {
+    elGapL.textContent = fmt(gapN * gapN * 0.001256637 * gapAe / (gapLe/gapUi + gapG));
+  } else {
+    elGapL.textContent = '—';
+  }
+}
+const lInputs = ['l-dil','l-vl','l-t','l-ui','l-ae','l-le','l-al-n','l-n','l-bsat','l-isat-n','l-isat-ae','l-isat-l','l-gap-ae','l-gap-le','l-gap-g','l-gap-ui','l-gap-n'];
+lInputs.forEach(id => document.getElementById(id).addEventListener('input', calcL));
 
 // --- Calculator 2: Gain to dB ---
 function calcGain() {
@@ -415,19 +564,17 @@ function calcZ() {
   save();
   const r = val('z-r'), l = val('z-l') || 0, c = val('z-c'), f = val('z-f');
   const noC = document.getElementById('z-noc').checked;
-  const elMag = document.getElementById('z-mag');
-  const elPhase = document.getElementById('z-phase-val');
-  const elDetail = document.getElementById('z-detail');
-  const elFormula = document.getElementById('z-formula');
-  const elIMag = document.getElementById('z-i-mag');
+  const elZMag = document.getElementById('z-mag-val');
+  const elZPhase = document.getElementById('z-phase-val');
+  const elIMag = document.getElementById('z-i-mag-val');
   const elIPhase = document.getElementById('z-i-phase-val');
   if (r === null || f === null || f === 0) {
-    elMag.textContent = '—'; elPhase.textContent = '—'; elDetail.textContent = '—';
+    elZMag.textContent = '—'; elZPhase.textContent = '—';
     elIMag.textContent = '—'; elIPhase.textContent = '—';
     return;
   }
   if (!noC && (c === null || c === 0)) {
-    elMag.textContent = '—'; elPhase.textContent = '—'; elDetail.textContent = '—';
+    elZMag.textContent = '—'; elZPhase.textContent = '—';
     elIMag.textContent = '—'; elIPhase.textContent = '—';
     return;
   }
@@ -438,10 +585,8 @@ function calcZ() {
   const im = xl - xc;
   const mag = Math.sqrt(re*re + im*im);
   const phase = Math.atan2(im, re) * 180 / Math.PI;
-  elMag.textContent = '|Z| = ' + fmt(mag) + ' Ω';
-  elPhase.textContent = '' + fmt(phase) + '';
-  elDetail.textContent = 'R = ' + fmt(r * 1000) + ' Ω,  XL = ' + fmt(xl) + ' Ω' + (noC ? '' : ',  XC = ' + fmt(xc) + ' Ω');
-  elFormula.textContent = noC ? 'Z = R + jωL, ω = 2πf' : 'Z = R + j(ωL − 1/ωC), ω = 2πf';
+  elZMag.textContent = fmt(mag);
+  elZPhase.textContent = fmt(phase);
   // Current I = V / Z
   const v = val('z-v');
   if (v === null || v === 0) {
@@ -449,8 +594,8 @@ function calcZ() {
   } else {
     const iMag = v / mag;
     const iPhase = -phase;
-    elIMag.textContent = '|I| = ' + fmt(iMag) + ' A';
-    elIPhase.textContent = '' + fmt(iPhase) + '';
+    elIMag.textContent = fmt(iMag);
+    elIPhase.textContent = fmt(iPhase);
   }
 }
 document.getElementById('z-r').addEventListener('input', calcZ);
@@ -710,6 +855,11 @@ function setBodeMode(mode) {
   saveBodeMode();
   drawBode();
 }
+document.getElementById('mode-select').addEventListener('click', function(e) {
+  const btn = e.target.closest('.mode-btn');
+  if (!btn) return;
+  setBodeMode(btn.dataset.mode);
+});
 
 function bodeVal(id) {
   const v = parseFloat(document.getElementById(id).value);
@@ -946,11 +1096,8 @@ document.getElementById('note-text').addEventListener('input', save);
 
 // --- On load: restore saved values, run all calculators ---
 document.addEventListener('DOMContentLoaded', function() {
-  TAB_IDS.forEach(function(id) {
-    document.getElementById('tab-' + id).addEventListener('change', onTabChange);
-  });
   restore();
-  calcRPar(); calcGain(); calcDbuv(); calcZ(); calcRes(); drawBode(); drawZBode();
+  calcRPar(); calcL(); calcGain(); calcDbuv(); calcZ(); calcRes(); drawBode(); drawZBode();
 });
 </script>
 </body>

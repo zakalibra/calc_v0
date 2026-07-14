@@ -42,6 +42,10 @@ h1 { font-size: 1.4rem; margin-bottom: 16px; color: #e0e0e0; }
 }
 .result .label { font-size: 0.8rem; color: #999; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
 .result .formula { font-size: 0.8rem; color: #777; margin-top: 4px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+.e24-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.e24-chip { cursor: pointer; background: #2a2a3a; border: 1px solid #444; border-radius: 4px; padding: 2px 10px; font-size: 0.85rem; font-family: 'Consolas', 'Courier New', monospace; color: #ccc; transition: 0.15s; }
+.e24-chip:hover { background: #3a7bd5; border-color: #3a7bd5; color: #fff; }
+.e24-chip.copied { background: #2a7b2a; border-color: #2a7b2a; }
 
 /* Bode */
 .mode-select { display: flex; gap: 6px; margin-bottom: 12px; }
@@ -77,43 +81,59 @@ textarea:focus { outline:none; border-color:#3a7bd5; box-shadow:0 0 0 2px rgba(5
     <div class="tab active" data-tab="note">Note</div>
     <div class="tab" data-tab="rpar">R</div>
     <div class="tab" data-tab="l">L</div>
-    <div class="tab" data-tab="gain">Gain→dB</div>
-    <div class="tab" data-tab="dbuv">dBµV→mV</div>
+    <div class="tab" data-tab="rc">RC</div>
+    <div class="tab" data-tab="gain">dB</div>
     <div class="tab" data-tab="z">Z(R+L+C)</div>
     <div class="tab" data-tab="res">Resonance</div>
     <div class="tab" data-tab="bode">Bode</div>
   </div>
 
-  <!-- Panel: Resistor divider / parallel -->
+  <!-- Panel: Resistor networks -->
   <div class="panel" id="panel-rpar">
-    <div class="bode-grid two">
+    <div class="bode-grid">
       <div class="calc-row">
-        <label for="ra">R<sub>a</sub> (kΩ)</label>
+        <label for="ra">Ra (kΩ)</label>
         <input type="number" id="ra" step="any" min="0" placeholder="e.g. 1">
       </div>
       <div class="calc-row">
-        <label for="rb">R<sub>b</sub> (kΩ)</label>
+        <label for="rb">Rb (kΩ)</label>
         <input type="number" id="rb" step="any" min="0" placeholder="e.g. 2.2">
       </div>
-    </div>
-    <div class="result" id="result-rpar">
-      <div>Ra∥Rb = <span id="rpar-value">—</span></div>
-      <div style="margin-top:2px;">Rb/(Ra+Rb) = <span id="rdiv-value">—</span></div>
-    </div>
-    <div class="bode-grid two" style="margin-top:12px;">
       <div class="calc-row">
-        <label for="rc">R<sub>c</sub> (kΩ)</label>
-        <input type="number" id="rc" step="any" min="0" placeholder="e.g. 1">
-      </div>
-      <div class="calc-row">
-        <label for="rd">R<sub>d</sub> (kΩ)</label>
-        <input type="number" id="rd" step="any" min="0" placeholder="e.g. 2.2">
+        <label for="rc" style="display:flex; align-items:center; gap:6px;">Rc (kΩ) <span style="display:inline-flex; align-items:center; gap:3px; cursor:pointer; font-weight:400;"><input type="checkbox" id="rc-open"> open</span></label>
+        <input type="number" id="rc" step="any" min="0" placeholder="e.g. 3.3">
       </div>
     </div>
-    <div class="result" id="result-rcrd">
-      <div>Rc∥Rd = <span id="rcrd-par-value">—</span></div>
-      <div style="margin-top:2px;">Rd/(Rc+Rd) = <span id="rcrd-div-value">—</span></div>
+    <div class="result" style="margin-top:0;">
+      <div>R<sub>b</sub>∥R<sub>c</sub> = <span id="rpar-bc">—</span></div>
+      <div style="margin-top:2px;">(R<sub>b</sub>∥R<sub>c</sub>) / (R<sub>a</sub>+R<sub>b</sub>∥R<sub>c</sub>) = <span id="rpar-abc">—</span></div>
+      <div class="formula">R<sub>b</sub>∥R<sub>c</sub> = R<sub>b</sub>·R<sub>c</sub> / (R<sub>b</sub>+R<sub>c</sub>) &emsp; R<sub>b</sub>∥R<sub>c</sub> / (R<sub>a</sub>+R<sub>b</sub>∥R<sub>c</sub>)</div>
     </div>
+    <div class="bode-grid" style="margin-top:12px;">
+      <div class="calc-row">
+        <label for="rd">Rd (kΩ)</label>
+        <input type="number" id="rd" step="any" min="0" placeholder="e.g. 1">
+      </div>
+      <div class="calc-row">
+        <label for="re">Re (kΩ)</label>
+        <input type="number" id="re" step="any" min="0" placeholder="e.g. 2.2">
+      </div>
+      <div class="calc-row">
+        <label for="rf" style="display:flex; align-items:center; gap:6px;">Rf (kΩ) <span style="display:inline-flex; align-items:center; gap:3px; cursor:pointer; font-weight:400;"><input type="checkbox" id="rf-open"> open</span></label>
+        <input type="number" id="rf" step="any" min="0" placeholder="e.g. 3.3">
+      </div>
+    </div>
+    <div class="result" style="margin-top:0;">
+      <div>R<sub>e</sub>∥R<sub>f</sub> = <span id="rpar-ef">—</span></div>
+      <div style="margin-top:2px;">(R<sub>e</sub>∥R<sub>f</sub>) / (R<sub>d</sub>+R<sub>e</sub>∥R<sub>f</sub>) = <span id="rpar-def">—</span></div>
+      <div class="formula">R<sub>e</sub>∥R<sub>f</sub> = R<sub>e</sub>·R<sub>f</sub> / (R<sub>e</sub>+R<sub>f</sub>) &emsp; R<sub>e</sub>∥R<sub>f</sub> / (R<sub>d</sub>+R<sub>e</sub>∥R<sub>f</sub>)</div>
+    </div>
+    <div class="label" style="margin:14px 0 6px 0; font-size:0.85rem; border-top:1px solid #333; padding-top:10px;">E24 values (click to copy)</div>
+    <div class="e24-list" id="e24-list"></div>
+    <details style="margin-top:10px;">
+      <summary style="cursor:pointer; font-size:0.85rem; color:#aaa; padding:2px 0;">E96 values (click to expand)</summary>
+      <div class="e24-list" id="e96-list" style="margin-top:6px;"></div>
+    </details>
   </div>
 
   <!-- Panel: Inductor -->
@@ -136,24 +156,32 @@ textarea:focus { outline:none; border-color:#3a7bd5; box-shadow:0 0 0 2px rgba(5
       <div>dI = <span id="l-di">—</span> A</div>
       <div class="formula">dI = V<sub>L</sub> · t / L</div>
     </div>
-    <div class="label" style="margin:16px 0 8px 0; font-size:0.9rem; border-top:1px solid #333; padding-top:12px;">Core parameters</div>
+    <div class="label" style="margin:16px 0 8px 0; font-size:0.9rem; border-top:1px solid #333; padding-top:12px;">Gapped-core inductance</div>
     <div class="bode-grid">
       <div class="calc-row">
-        <label for="l-ui">µ<sub>i</sub></label>
-        <input type="number" id="l-ui" step="any" min="0" placeholder="e.g. 2000">
+        <label for="l-gap-ae">A<sub>e</sub> (mm²)</label>
+        <input type="number" id="l-gap-ae" step="any" min="0" placeholder="e.g. 100">
       </div>
       <div class="calc-row">
-        <label for="l-ae">A<sub>e</sub> (mm²)</label>
-        <input type="number" id="l-ae" step="any" min="0" placeholder="e.g. 100">
+        <label for="l-gap-le">l<sub>e</sub> (mm)</label>
+        <input type="number" id="l-gap-le" step="any" min="0" placeholder="e.g. 150">
       </div>
       <div class="calc-row">
-        <label for="l-le">l<sub>e</sub> (mm)</label>
-        <input type="number" id="l-le" step="any" min="0" placeholder="e.g. 150">
+        <label for="l-gap-g">gap (mm)</label>
+        <input type="number" id="l-gap-g" step="any" min="0" placeholder="e.g. 0.5">
+      </div>
+      <div class="calc-row">
+        <label for="l-gap-ui">µ<sub>i</sub></label>
+        <input type="number" id="l-gap-ui" step="any" min="0" placeholder="e.g. 2000">
+      </div>
+      <div class="calc-row">
+        <label for="l-gap-n">N (turns)</label>
+        <input type="number" id="l-gap-n" step="any" min="0" placeholder="e.g. 10">
       </div>
     </div>
     <div class="result" style="margin-top:0;">
-      <div>A<sub>L</sub> = <span id="l-al">—</span> nH/N²</div>
-      <div class="formula">A<sub>L</sub> = 1.2566 · µ<sub>i</sub> · A<sub>e</sub> / l<sub>e</sub></div>
+      <div>L = <span id="l-gap-l">—</span> µH</div>
+      <div class="formula">L = 4π · 10⁻⁴ · N² · A<sub>e</sub> / (l<sub>e</sub>/µ<sub>i</sub> + gap)</div>
     </div>
     <div class="label" style="margin:16px 0 8px 0; font-size:0.9rem; border-top:1px solid #333; padding-top:12px;">Inductance from A<sub>L</sub></div>
     <div class="bode-grid two">
@@ -193,59 +221,55 @@ textarea:focus { outline:none; border-color:#3a7bd5; box-shadow:0 0 0 2px rgba(5
       <div>I<sub>sat</sub> = <span id="l-isat">—</span> A</div>
       <div class="formula">I<sub>sat</sub> = N · B<sub>sat</sub> · A<sub>e</sub> / L</div>
     </div>
-    <div class="label" style="margin:16px 0 8px 0; font-size:0.9rem; border-top:1px solid #333; padding-top:12px;">Gapped-core inductance</div>
+  </div>
+
+  <!-- Panel: RC -->
+  <div class="panel" id="panel-rc">
     <div class="bode-grid">
       <div class="calc-row">
-        <label for="l-gap-ae">A<sub>e</sub> (mm²)</label>
-        <input type="number" id="l-gap-ae" step="any" min="0" placeholder="e.g. 100">
+        <label for="rc-r">R (kΩ)</label>
+        <input type="number" id="rc-r" step="any" min="0" placeholder="e.g. 10">
       </div>
       <div class="calc-row">
-        <label for="l-gap-le">l<sub>e</sub> (mm)</label>
-        <input type="number" id="l-gap-le" step="any" min="0" placeholder="e.g. 150">
-      </div>
-      <div class="calc-row">
-        <label for="l-gap-g">gap (mm)</label>
-        <input type="number" id="l-gap-g" step="any" min="0" placeholder="e.g. 0.5">
-      </div>
-      <div class="calc-row">
-        <label for="l-gap-ui">µ<sub>i</sub></label>
-        <input type="number" id="l-gap-ui" step="any" min="0" placeholder="e.g. 2000">
-      </div>
-      <div class="calc-row">
-        <label for="l-gap-n">N (turns)</label>
-        <input type="number" id="l-gap-n" step="any" min="0" placeholder="e.g. 10">
+        <label for="rc-c">C (µF)</label>
+        <input type="number" id="rc-c" step="any" min="0" placeholder="e.g. 0.1">
       </div>
     </div>
-    <div class="result" style="margin-top:0;">
-      <div>L = <span id="l-gap-l">—</span> µH</div>
-      <div class="formula">L = 4π · 10⁻⁴ · N² · A<sub>e</sub> / (l<sub>e</sub>/µ<sub>i</sub> + gap)</div>
+    <div class="result" style="margin-top:8px;">
+      <div style="display:flex; gap:32px;">
+        <div>τ = <span id="rc-tau">—</span> ms</div>
+        <div>f<sub>c</sub> = <span id="rc-fc">—</span> Hz</div>
+      </div>
+      <div class="formula">τ = R · C &emsp; f<sub>c</sub> = 1 / (2π · R · C)</div>
     </div>
   </div>
 
-  <!-- Panel: Gain to dB -->
+  <!-- Panel: dB -->
   <div class="panel" id="panel-gain">
-    <div class="calc-row">
-      <label for="gain">Gain (linear ratio)</label>
-      <input type="number" id="gain" step="any" min="0" placeholder="e.g. 100">
-    </div>
-    <div class="result" id="result-gain">
-      <div class="label">dB =</div>
-      <div id="gain-value">—</div>
-      <div class="formula">20 × log(Gain)</div>
-    </div>
-  </div>
-
-  <!-- Panel: dBµV to mV -->
-  <div class="panel" id="panel-dbuv">
-    <div class="calc-row">
-      <label for="dbuv">dBµV</label>
-      <input type="number" id="dbuv" step="any" placeholder="e.g. 107">
-    </div>
-    <div class="result" id="result-dbuv">
-      <div class="label">Amplitude =</div>
-      <div id="dbuv-value-uv">—</div>
-      <div id="dbuv-value-mv" style="margin-top:4px;">—</div>
-      <div class="formula">V = 10^(dBµV/20)</div>
+    <div class="bode-grid two">
+      <div>
+        <div class="calc-row">
+          <label for="gain">Gain (linear)</label>
+          <input type="number" id="gain" step="any" min="0" placeholder="e.g. 100">
+        </div>
+        <div class="result" style="margin-top:0;">
+          <div class="label">dB =</div>
+          <div id="gain-value">—</div>
+          <div class="formula">20 × log(Gain)</div>
+        </div>
+      </div>
+      <div>
+        <div class="calc-row">
+          <label for="dbuv">dBµV</label>
+          <input type="number" id="dbuv" step="any" placeholder="e.g. 107">
+        </div>
+        <div class="result" style="margin-top:0;">
+          <div class="label">Amplitude =</div>
+          <div id="dbuv-value-uv">—</div>
+          <div id="dbuv-value-mv" style="margin-top:4px;">—</div>
+          <div class="formula">V = 10^(dBµV/20)</div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -419,7 +443,7 @@ function val(id) {
 }
 
 // --- Input IDs for save/restore ---
-const INPUT_IDS = ['ra','rb','rc','rd','l-dil','l-vl','l-t','l-ui','l-ae','l-le','l-al-n','l-n','l-bsat','l-isat-n','l-isat-ae','l-isat-l','l-gap-ae','l-gap-le','l-gap-g','l-gap-ui','l-gap-n','gain','dbuv','z-r','z-l','z-c','z-f','z-noc','z-v','res-l','res-c',
+const INPUT_IDS = ['ra','rb','rc','rc-open','rd','re','rf','rf-open','l-dil','l-vl','l-t','l-al-n','l-n','l-bsat','l-isat-n','l-isat-ae','l-isat-l','l-gap-ae','l-gap-le','l-gap-g','l-gap-ui','l-gap-n','rc-r','rc-c','gain','dbuv','z-r','z-l','z-c','z-f','z-noc','z-v','res-l','res-c',
   'bode-kp','bode-ki','bode-kd','bode-g','bode-z1','bode-z2','bode-p2',
   'bode-fstart','bode-fend','bode-npp',
   'zd-fs','zd-b0','zd-b1','zd-b2','zd-b3','zd-b4','zd-a1','zd-a2','zd-a3','zd-a4',
@@ -470,28 +494,43 @@ function restore() {
 // --- Calculator 1: Parallel Resistors ---
 function calcRPar() {
   save();
-  const ra = val('ra'), rb = val('rb'), rc = val('rc'), rd = val('rd');
-  const elPar = document.getElementById('rpar-value');
-  const elDiv = document.getElementById('rdiv-value');
-  const elRcRdPar = document.getElementById('rcrd-par-value');
-  const elRcRdDiv = document.getElementById('rcrd-div-value');
-  if (ra !== null && rb !== null && ra !== 0 && rb !== 0) {
-    elPar.textContent = fmt((ra * rb) / (ra + rb)) + ' kΩ';
-    elDiv.textContent = fmt(rb / (ra + rb));
+  const ra = val('ra'), rb = val('rb'), rc = val('rc');
+  const rcOpen = document.getElementById('rc-open').checked;
+  const elBc = document.getElementById('rpar-bc');
+  const elAbc = document.getElementById('rpar-abc');
+  if (rb !== null && rb !== 0 && (!rcOpen && rc !== null && rc !== 0)) {
+    const bc = (rb * rc) / (rb + rc);
+    elBc.textContent = fmt(bc) + ' kΩ';
+    elAbc.textContent = ra !== null ? fmt(bc / (ra + bc)) : '—';
+  } else if (rb !== null && rb !== 0 && rcOpen) {
+    elBc.textContent = fmt(rb) + ' kΩ';
+    elAbc.textContent = ra !== null ? fmt(rb / (ra + rb)) : '—';
   } else {
-    elPar.textContent = '—'; elDiv.textContent = '—';
+    elBc.textContent = '—'; elAbc.textContent = '—';
   }
-  if (rc !== null && rd !== null && rc !== 0 && rd !== 0) {
-    elRcRdPar.textContent = fmt((rc * rd) / (rc + rd)) + ' kΩ';
-    elRcRdDiv.textContent = fmt(rd / (rc + rd));
+  const rd = val('rd'), re = val('re'), rf = val('rf');
+  const rfOpen = document.getElementById('rf-open').checked;
+  const elEf = document.getElementById('rpar-ef');
+  const elDef = document.getElementById('rpar-def');
+  if (re !== null && re !== 0 && (!rfOpen && rf !== null && rf !== 0)) {
+    const ef = (re * rf) / (re + rf);
+    elEf.textContent = fmt(ef) + ' kΩ';
+    elDef.textContent = rd !== null ? fmt(ef / (rd + ef)) : '—';
+  } else if (re !== null && re !== 0 && rfOpen) {
+    elEf.textContent = fmt(re) + ' kΩ';
+    elDef.textContent = rd !== null ? fmt(re / (rd + re)) : '—';
   } else {
-    elRcRdPar.textContent = '—'; elRcRdDiv.textContent = '—';
+    elEf.textContent = '—'; elDef.textContent = '—';
   }
 }
 document.getElementById('ra').addEventListener('input', calcRPar);
 document.getElementById('rb').addEventListener('input', calcRPar);
 document.getElementById('rc').addEventListener('input', calcRPar);
+document.getElementById('rc-open').addEventListener('change', calcRPar);
 document.getElementById('rd').addEventListener('input', calcRPar);
+document.getElementById('re').addEventListener('input', calcRPar);
+document.getElementById('rf').addEventListener('input', calcRPar);
+document.getElementById('rf-open').addEventListener('change', calcRPar);
 
 // --- Calculator: Inductor ---
 function calcL() {
@@ -502,14 +541,6 @@ function calcL() {
     elDi.textContent = fmt(vl * t / dil);
   } else {
     elDi.textContent = '—';
-  }
-  const ui = val('l-ui'), ae = val('l-ae'), le = val('l-le');
-  const elAl = document.getElementById('l-al');
-  if (ui !== null && ae !== null && le !== null && le !== 0) {
-    const al = 1.256637 * ui * ae / le;
-    elAl.textContent = fmt(al);
-  } else {
-    elAl.textContent = '—';
   }
   const alN = val('l-al-n'), n = val('l-n');
   const elL = document.getElementById('l-lval');
@@ -533,8 +564,24 @@ function calcL() {
     elGapL.textContent = '—';
   }
 }
-const lInputs = ['l-dil','l-vl','l-t','l-ui','l-ae','l-le','l-al-n','l-n','l-bsat','l-isat-n','l-isat-ae','l-isat-l','l-gap-ae','l-gap-le','l-gap-g','l-gap-ui','l-gap-n'];
+const lInputs = ['l-dil','l-vl','l-t','l-al-n','l-n','l-bsat','l-isat-n','l-isat-ae','l-isat-l','l-gap-ae','l-gap-le','l-gap-g','l-gap-ui','l-gap-n'];
 lInputs.forEach(id => document.getElementById(id).addEventListener('input', calcL));
+
+// --- Calculator: RC ---
+function calcRc() {
+  save();
+  const r = val('rc-r'), c = val('rc-c');
+  const elTau = document.getElementById('rc-tau');
+  const elFc = document.getElementById('rc-fc');
+  if (r !== null && c !== null && r !== 0 && c !== 0) {
+    elTau.textContent = fmt(r * c);
+    elFc.textContent = fmt(1000 / (2 * Math.PI * r * c));
+  } else {
+    elTau.textContent = '—'; elFc.textContent = '—';
+  }
+}
+document.getElementById('rc-r').addEventListener('input', calcRc);
+document.getElementById('rc-c').addEventListener('input', calcRc);
 
 // --- Calculator 2: Gain to dB ---
 function calcGain() {
@@ -1097,7 +1144,29 @@ document.getElementById('note-text').addEventListener('input', save);
 // --- On load: restore saved values, run all calculators ---
 document.addEventListener('DOMContentLoaded', function() {
   restore();
-  calcRPar(); calcL(); calcGain(); calcDbuv(); calcZ(); calcRes(); drawBode(); drawZBode();
+  calcRPar(); calcL(); calcRc(); calcGain(); calcDbuv(); calcZ(); calcRes(); drawBode(); drawZBode();
+  // Populate E24 / E96 reference lists
+  const e24 = ['1.0','1.1','1.2','1.3','1.5','1.6','1.8','2.0','2.2','2.4','2.7','3.0','3.3','3.6','3.9','4.3','4.7','5.1','5.6','6.2','6.8','7.5','8.2','9.1'];
+  const e96 = ['100','102','105','107','110','113','115','118','121','124','127','130','133','137','140','143','147','150','154','158','162','165','169','174','178','182','187','191','196','200','205','210','215','221','226','232','237','243','249','255','261','267','274','280','287','294','301','309','316','324','332','340','348','357','365','374','383','392','402','412','422','432','442','453','464','475','487','499','511','523','536','549','562','576','590','604','619','634','649','665','681','698','715','732','750','768','787','806','825','845','866','887','909','931','953','976'];
+  const makeChips = (container, values) => {
+    values.forEach(v => {
+      const chip = document.createElement('span');
+      chip.className = 'e24-chip';
+      chip.textContent = v;
+      chip.addEventListener('click', function() {
+        navigator.clipboard.writeText(this.textContent).then(() => {
+          this.classList.add('copied');
+          this.textContent = '✓ ' + v;
+          setTimeout(() => { this.classList.remove('copied'); this.textContent = v; }, 1000);
+        }).catch(() => {});
+      });
+      container.appendChild(chip);
+    });
+  };
+  const el = document.getElementById('e24-list');
+  if (el) makeChips(el, e24);
+  const el96 = document.getElementById('e96-list');
+  if (el96) makeChips(el96, e96);
 });
 </script>
 </body>
